@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Q.A. Report - Links & Totais</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --color-passou: #198754; --color-falhou: #dc3545;
+            --color-bloqueado: #ffc107; --color-sugestao: #0dcaf0;
+        }
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        #captureArea { padding: 30px; background: white; max-width: 1150px; margin: auto; border-radius: 8px; }
+        .task-link { color: #0d6efd; text-decoration: underline; word-break: break-all; }
+        .charts-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+        .chart-card { background: #fff; padding: 15px; border: 1px solid #eee; border-radius: 10px; height: 320px; }
+        
+        /* Ajuste nos selos para exibir nomes completos */
+        .stat-pill { 
+            padding: 4px 14px; 
+            border-radius: 20px; 
+            font-weight: bold; 
+            font-size: 0.8rem; 
+            margin-right: 5px; 
+            color: white; 
+            display: inline-block;
+        }
+        .total-badge { background: #343a40; }
+
+        .system-block { margin-top: 40px; padding-top: 20px; border-top: 2px solid #0d6efd; }
+        .system-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+        .tasks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; }
+        
+        /* Cards de tarefa */
+        .task-card { border: 1px solid #eee; border-left: 6px solid #dee2e6; padding: 12px; background: #fff; border-radius: 8px; min-height: 100px; }
+        .status-passou { border-left-color: var(--color-passou) !important; }
+        .status-falhou { border-left-color: var(--color-falhou) !important; }
+        .status-bloqueado { border-left-color: var(--color-bloqueado) !important; }
+        .status-sugestao { border-left-color: var(--color-sugestao) !important; }
+
+        /* REGRAS PARA EXPORTAÇÃO PDF (CORES) */
+        @media print {
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .no-print { display: none !important; }
+            #captureArea { padding: 0; width: 100%; max-width: 100%; border: none; }
+            .task-card { break-inside: avoid; border: 1px solid #eee !important; border-left-width: 6px !important; }
+            body { background: white; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-lg-4 no-print">
+            <div class="card p-4 shadow-sm border-0 sticky-top">
+                <h5 class="fw-bold mb-3">🛠️ Adicionar Dados</h5>
+                <input type="text" id="systemInput" class="form-control mb-2" placeholder="Nome do Sistema (ex: eGestor)">
+                <textarea id="bulkInput" class="form-control mb-3" rows="10" placeholder="FORMATO:&#10;VALIDADA: Minha tarefa...&#10;CORREÇÃO: Erro encontrado..."></textarea>
+                <div class="d-grid gap-2">
+                    <button onclick="appendSystem()" class="btn btn-primary fw-bold">➕ Incluir Sistema</button>
+                    <button onclick="window.print()" class="btn btn-dark fw-bold">📄 Exportar PDF</button>
+                    <button onclick="clearAll()" class="btn btn-outline-danger btn-sm">Limpar Tudo</button>
+                </div>
+                <div class="mt-4 p-3 bg-light rounded border">
+                    <h6 class="fw-bold small">Total Global de Tarefas: <span id="globalCount">0</span></h6>
+                    <div id="globalSummary" style="font-size: 0.75rem;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div id="captureArea">
+                <div class="text-center mb-4">
+                    <h2 class="fw-bold">Relatório de Execução Q.A.</h2>
+                    <p class="text-muted small">Gerado em: <span id="genDate" class="fw-bold text-dark">--/--/---- --:--</span></p>
+                </div>
+                <div class="charts-container">
+                    <div class="chart-card shadow-sm"><canvas id="statusChart"></canvas></div>
+                    <div class="chart-card shadow-sm"><canvas id="typeChart"></canvas></div>
+                </div>
+                <div id="systemsWrapper">
+                    <p class="text-center text-muted py-5" id="emptyMsg">Aguardando dados para consolidar o relatório.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let allData = [];
+    let statusChart, typeChart;
+    const colors = { passou: '#198754', falhou: '#dc3545', bloqueado: '#ffc107', sugestao: '#0dcaf0' };
+
+    function linkify(text) {
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        return text.replace(urlRegex, (url) => `<a href="${url}" target="_blank" class="task-link">${url}</a>`);
+    }
+
+    function appendSystem() {
+        const sysName = document.getElementById('systemInput').value.trim() || "Sistema Geral";
+        const rawText = document.getElementById('bulkInput').value;
+        const regex = /(?=(?:validada|correção|retorno|sugestão))/gi;
+        
+        const chunks = rawText.split(regex).filter(chunk => {
+            const cleanCheck = chunk
+                .replace(/^(validada|correção|retorno|sugestão)/gi, '')
+                .replace(/[\[\]x\*\-\s\t\n\r]/gi, '') 
+                .trim();
+            return cleanCheck.length > 2;
+        });
+
+        if (chunks.length === 0) return alert("Nenhuma tarefa válida encontrada.");
+
+        const sysTasks = chunks.map(chunk => {
+            const low = chunk.toLowerCase();
+            let status = 'PASSOU', type = 'Validada', border = 'status-passou', badge = 'bg-success';
+            
+            if (low.includes('correção')) { status = 'FALHOU'; type = 'Correção'; border = 'status-falhou'; badge = 'bg-danger'; }
+            else if (low.includes('retorno')) { status = 'BLOQUEADO'; type = 'Retorno'; border = 'status-bloqueado'; badge = 'bg-warning text-dark'; }
+            else if (low.includes('sugestão')) { status = 'SUGESTÃO'; type = 'Sugestão'; border = 'status-sugestao'; badge = 'bg-info'; }
+
+            const cleanDesc = chunk.replace(/^(validada|correção|retorno|sugestão)[:\s\-\[\]\*\+]*/gi, '').trim();
+            const firstLine = cleanDesc.split('\n')[0].substring(0, 80);
+            
+            return { title: firstLine, status, type, border, badge, full: linkify(cleanDesc) };
+        });
+
+        allData.push({ name: sysName, tasks: sysTasks });
+        
+        const agora = new Date();
+        document.getElementById('genDate').innerText = agora.toLocaleDateString('pt-BR') + " " + agora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+        
+        renderAll();
+        document.getElementById('bulkInput').value = "";
+        document.getElementById('systemInput').value = "";
+        document.getElementById('emptyMsg').style.display = 'none';
+    }
+
+    function renderAll() {
+        const wrapper = document.getElementById('systemsWrapper');
+        wrapper.innerHTML = "";
+        let globalS = { 'PASSOU':0, 'FALHOU':0, 'BLOQUEADO':0, 'SUGESTÃO':0 };
+
+        allData.forEach(sys => {
+            const counts = { 'PASSOU':0, 'FALHOU':0, 'BLOQUEADO':0, 'SUGESTÃO':0 };
+            sys.tasks.forEach(t => { counts[t.status]++; globalS[t.status]++; });
+
+            const block = document.createElement('div');
+            block.className = 'system-block';
+            block.innerHTML = `
+                <div class="system-header">
+                    <h5 class="fw-bold text-primary m-0">📦 ${sys.name}</h5>
+                    <div>
+                        <span class="stat-pill total-badge">Total: ${sys.tasks.length}</span>
+                        <span class="stat-pill bg-success">Passou: ${counts.PASSOU}</span>
+                        <span class="stat-pill bg-danger">Falhou: ${counts.FALHOU}</span>
+                        <span class="stat-pill bg-warning text-dark">Bloqueado: ${counts.BLOQUEADO}</span>
+                        <span class="stat-pill bg-info">Sugestão: ${counts.SUGESTÃO}</span>
+                    </div>
+                </div>
+                <div class="tasks-grid">
+                    ${sys.tasks.map((t, idx) => `
+                        <div class="task-card ${t.border}">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="badge bg-dark" style="font-size:0.6rem">#${idx+1}</span>
+                                <span class="badge ${t.badge}">${t.status}</span>
+                            </div>
+                            <h6 class="fw-bold small mb-1">${t.title}${t.title.length >= 80 ? '...' : ''}</h6>
+                            <div style="font-size:0.75rem; color:#444; white-space: pre-wrap;">${t.full}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            wrapper.appendChild(block);
+        });
+
+        document.getElementById('globalCount').innerText = Object.values(globalS).reduce((a, b) => a + b, 0);
+        document.getElementById('globalSummary').innerHTML = `PASSOU: ${globalS.PASSOU} | FALHOU: ${globalS.FALHOU} | BLOQUEADO: ${globalS.BLOQUEADO} | SUGESTÃO: ${globalS.SUGESTÃO}`;
+        updateCharts(globalS);
+    }
+
+    function initCharts() {
+        statusChart = new Chart(document.getElementById('statusChart'), {
+            type: 'doughnut',
+            data: { labels: ['PASSOU', 'FALHOU', 'BLOQUEADO', 'SUGESTÃO'], datasets: [{ data: [0,0,0,0], backgroundColor: Object.values(colors) }] },
+            options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'Consolidado Global (%)' }, legend: { position: 'bottom' } } }
+        });
+        typeChart = new Chart(document.getElementById('typeChart'), {
+            type: 'bar',
+            data: { labels: ['Validada', 'Correção', 'Retorno', 'Sugestão'], datasets: [{ label: 'Qtd', data: [0,0,0,0], backgroundColor: Object.values(colors) }] },
+            options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+    }
+
+    function updateCharts(s) {
+        const vals = [s.PASSOU, s.FALHOU, s.BLOQUEADO, s.SUGESTÃO];
+        statusChart.data.datasets[0].data = vals;
+        typeChart.data.datasets[0].data = vals;
+        statusChart.update(); typeChart.update();
+    }
+
+    function clearAll() { 
+        if(confirm("Deseja limpar todos os dados?")) { 
+            allData = []; 
+            document.getElementById('genDate').innerText = "--/--/---- --:--";
+            renderAll(); 
+            document.getElementById('emptyMsg').style.display = 'block'; 
+        } 
+    }
+
+    window.onload = initCharts;
+</script>
+</body>
+</html>
