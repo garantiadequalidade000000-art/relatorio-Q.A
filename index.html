@@ -14,39 +14,45 @@
         body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, sans-serif; }
         #captureArea { padding: 30px; background: white; max-width: 1150px; margin: auto; border-radius: 8px; }
         .task-link { color: #0d6efd; text-decoration: underline; word-break: break-all; }
+        
+        /* Gráficos */
         .charts-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
         .chart-card { background: #fff; padding: 15px; border: 1px solid #eee; border-radius: 10px; height: 320px; }
         
-        /* Ajuste nos selos para exibir nomes completos */
-        .stat-pill { 
-            padding: 4px 14px; 
-            border-radius: 20px; 
-            font-weight: bold; 
-            font-size: 0.8rem; 
-            margin-right: 5px; 
-            color: white; 
-            display: inline-block;
-        }
+        /* Cabeçalhos e Badges */
+        .stat-pill { padding: 4px 14px; border-radius: 20px; font-weight: bold; font-size: 0.8rem; margin-right: 5px; color: white; display: inline-block; }
         .total-badge { background: #343a40; }
-
         .system-block { margin-top: 40px; padding-top: 20px; border-top: 2px solid #0d6efd; }
         .system-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
-        .tasks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; }
+
+        /* Grid de Tarefas - Tela */
+        .tasks-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .task-card { border: 1px solid #eee; border-left: 6px solid #dee2e6; padding: 12px; background: #fff; border-radius: 8px; min-height: 120px; }
         
-        /* Cards de tarefa */
-        .task-card { border: 1px solid #eee; border-left: 6px solid #dee2e6; padding: 12px; background: #fff; border-radius: 8px; min-height: 100px; }
         .status-passou { border-left-color: var(--color-passou) !important; }
         .status-falhou { border-left-color: var(--color-falhou) !important; }
         .status-bloqueado { border-left-color: var(--color-bloqueado) !important; }
         .status-sugestao { border-left-color: var(--color-sugestao) !important; }
 
-        /* REGRAS PARA EXPORTAÇÃO PDF (CORES) */
+        /* AJUSTE PARA PDF / IMPRESSÃO */
         @media print {
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .no-print { display: none !important; }
+            body { background: white !important; }
             #captureArea { padding: 0; width: 100%; max-width: 100%; border: none; }
-            .task-card { break-inside: avoid; border: 1px solid #eee !important; border-left-width: 6px !important; }
-            body { background: white; }
+            
+            /* Força a exibição de 3 colunas no PDF */
+            .tasks-grid { 
+                display: grid !important; 
+                grid-template-columns: repeat(3, 1fr) !important; 
+                gap: 10px !important; 
+            }
+            .task-card { 
+                break-inside: avoid; 
+                border: 1px solid #eee !important; 
+                border-left: 6px solid #dee2e6 !important; 
+            }
+            .charts-container { grid-template-columns: 1fr 1fr !important; }
         }
     </style>
 </head>
@@ -57,8 +63,8 @@
         <div class="col-lg-4 no-print">
             <div class="card p-4 shadow-sm border-0 sticky-top">
                 <h5 class="fw-bold mb-3">🛠️ Adicionar Dados</h5>
-                <input type="text" id="systemInput" class="form-control mb-2" placeholder="Nome do Sistema (ex: eGestor)">
-                <textarea id="bulkInput" class="form-control mb-3" rows="10" placeholder="FORMATO:&#10;VALIDADA: Minha tarefa...&#10;CORREÇÃO: Erro encontrado..."></textarea>
+                <input type="text" id="systemInput" class="form-control mb-2" placeholder="Nome do Sistema">
+                <textarea id="bulkInput" class="form-control mb-3" rows="10" placeholder="Exemplo:&#10;VALIDADA: Descrição da tarefa https://link.com"></textarea>
                 <div class="d-grid gap-2">
                     <button onclick="appendSystem()" class="btn btn-primary fw-bold">➕ Incluir Sistema</button>
                     <button onclick="window.print()" class="btn btn-dark fw-bold">📄 Exportar PDF</button>
@@ -94,9 +100,18 @@
     let statusChart, typeChart;
     const colors = { passou: '#198754', falhou: '#dc3545', bloqueado: '#ffc107', sugestao: '#0dcaf0' };
 
+    // Identifica links, remove duplicados e resíduos, exibe apenas UM
     function linkify(text) {
-        const urlRegex = /(https?:\/\/[^\s]+)/g;
-        return text.replace(urlRegex, (url) => `<a href="${url}" target="_blank" class="task-link">${url}</a>`);
+        const urlRegex = /(https?:\/\/[^\s\)\}\]]+)/g;
+        const matches = text.match(urlRegex) || [];
+        const uniqueUrls = [...new Set(matches)];
+        let cleanText = text.replace(urlRegex, '').replace(/[\[\]\(\)\{\}]/g, '').trim();
+        
+        if (uniqueUrls.length > 0) {
+            const onlyOneLink = uniqueUrls[0];
+            return cleanText + `<br><a href="${onlyOneLink}" target="_blank" class="task-link">${onlyOneLink}</a>`;
+        }
+        return cleanText;
     }
 
     function appendSystem() {
@@ -105,16 +120,14 @@
         const regex = /(?=(?:validada|correção|retorno|sugestão))/gi;
         
         const chunks = rawText.split(regex).filter(chunk => {
-            const cleanCheck = chunk
-                .replace(/^(validada|correção|retorno|sugestão)/gi, '')
-                .replace(/[\[\]x\*\-\s\t\n\r]/gi, '') 
-                .trim();
-            return cleanCheck.length > 2;
+            const content = chunk.replace(/^(validada|correção|retorno|sugestão)/gi, '')
+                                .replace(/[\[\]x\*\-\s\t\n\r]/gi, '').trim();
+            return content.length > 2;
         });
 
         if (chunks.length === 0) return alert("Nenhuma tarefa válida encontrada.");
 
-        const sysTasks = chunks.map(chunk => {
+        const newTasks = chunks.map(chunk => {
             const low = chunk.toLowerCase();
             let status = 'PASSOU', type = 'Validada', border = 'status-passou', badge = 'bg-success';
             
@@ -123,16 +136,20 @@
             else if (low.includes('sugestão')) { status = 'SUGESTÃO'; type = 'Sugestão'; border = 'status-sugestao'; badge = 'bg-info'; }
 
             const cleanDesc = chunk.replace(/^(validada|correção|retorno|sugestão)[:\s\-\[\]\*\+]*/gi, '').trim();
-            const firstLine = cleanDesc.split('\n')[0].substring(0, 80);
+            const title = cleanDesc.split('\n')[0].substring(0, 80);
             
-            return { title: firstLine, status, type, border, badge, full: linkify(cleanDesc) };
+            return { title, status, type, border, badge, full: linkify(cleanDesc) };
         });
 
-        allData.push({ name: sysName, tasks: sysTasks });
-        
-        const agora = new Date();
-        document.getElementById('genDate').innerText = agora.toLocaleDateString('pt-BR') + " " + agora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-        
+        // Agrupamento por Sistema
+        const existingSystem = allData.find(s => s.name.toLowerCase() === sysName.toLowerCase());
+        if (existingSystem) {
+            existingSystem.tasks.push(...newTasks);
+        } else {
+            allData.push({ name: sysName, tasks: newTasks });
+        }
+
+        document.getElementById('genDate').innerText = new Date().toLocaleString('pt-BR');
         renderAll();
         document.getElementById('bulkInput').value = "";
         document.getElementById('systemInput').value = "";
@@ -168,7 +185,7 @@
                                 <span class="badge bg-dark" style="font-size:0.6rem">#${idx+1}</span>
                                 <span class="badge ${t.badge}">${t.status}</span>
                             </div>
-                            <h6 class="fw-bold small mb-1">${t.title}${t.title.length >= 80 ? '...' : ''}</h6>
+                            <h6 class="fw-bold small mb-1">${t.title}</h6>
                             <div style="font-size:0.75rem; color:#444; white-space: pre-wrap;">${t.full}</div>
                         </div>
                     `).join('')}
@@ -178,7 +195,7 @@
         });
 
         document.getElementById('globalCount').innerText = Object.values(globalS).reduce((a, b) => a + b, 0);
-        document.getElementById('globalSummary').innerHTML = `PASSOU: ${globalS.PASSOU} | FALHOU: ${globalS.FALHOU} | BLOQUEADO: ${globalS.BLOQUEADO} | SUGESTÃO: ${globalS.SUGESTÃO}`;
+        document.getElementById('globalSummary').innerHTML = `Passou: ${globalS.PASSOU} | Falhou: ${globalS.FALHOU} | Bloqueado: ${globalS.BLOQUEADO} | Sugestão: ${globalS.SUGESTÃO}`;
         updateCharts(globalS);
     }
 
@@ -202,15 +219,7 @@
         statusChart.update(); typeChart.update();
     }
 
-    function clearAll() { 
-        if(confirm("Deseja limpar todos os dados?")) { 
-            allData = []; 
-            document.getElementById('genDate').innerText = "--/--/---- --:--";
-            renderAll(); 
-            document.getElementById('emptyMsg').style.display = 'block'; 
-        } 
-    }
-
+    function clearAll() { if(confirm("Limpar tudo?")) { allData = []; renderAll(); document.getElementById('emptyMsg').style.display = 'block'; } }
     window.onload = initCharts;
 </script>
 </body>
