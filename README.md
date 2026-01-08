@@ -24,8 +24,4 @@ Uma ferramenta web prática e eficiente desenvolvida para centralizar a consolid
 * **Gráficos:** Bibliotecas de visualização de dados
 * **Deployment:** Vercel
 
-## 🚀 Como Executar Localmente
 
-1. **Clone o repositório:**
-   ```bash
-   git clone [https://github.com/seu-usuario/relatorio-q-a.git](https://github.com/seu-usuario/relatorio-q-a.git)
