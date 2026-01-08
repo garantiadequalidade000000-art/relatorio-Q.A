@@ -1,26 +1,31 @@
-📊 Relatório de Execução Q.A.
-Uma ferramenta web intuitiva para a consolidação de dados de testes de Quality Assurance. O sistema permite a entrada manual de tarefas, a visualização imediata de métricas através de gráficos e a exportação dos resultados formatados para PDF.
+# 📊 Relatório de Execução Q.A.
 
-✨ Funcionalidades
-Entrada de Dados Dinâmica: Adicione o nome do sistema e a descrição das tarefas (suporta links e tags de status).
+Uma ferramenta web prática e eficiente desenvolvida para centralizar a consolidação de dados de testes de Quality Assurance. O sistema permite a entrada dinâmica de informações, gera gráficos comparativos em tempo real e exporta os resultados formatados para PDF.
 
-Consolidação Automática: Calcula o total global de tarefas em tempo real.
+> **Link do Projeto:** [https://relatorio-q-a.vercel.app/](https://relatorio-q-a.vercel.app/)
 
-Gráficos de Desempenho: - Consolidado Global: Gráfico de pizza/donut que categoriza os resultados.
+---
 
-Gráfico de Barras: Comparativo visual entre tarefas Validadas, em Correção, Retorno e Sugestão.
+## ✨ Funcionalidades
 
-Categorização por Status: Identificação visual para Passou, Falhou, Bloqueado e Sugestão.
+* **Entrada de Dados Dinâmica:** Permite inserir o nome do sistema e descrições detalhadas das tarefas.
+* **Gestão de Status:** Suporta tags de status como VALIDADA, PASSOU, FALHOU, BLOQUEADO e SUGESTÃO.
+* **Visualização de Dados:**
+    * **Consolidado Global:** Gráfico circular para análise percentual de status.
+    * **Gráfico de Barras:** Comparativo visual de categorias (Validada, Correção, Retorno, Sugestão).
+* **Contador em Tempo Real:** Monitorização do total global de tarefas inseridas.
+* **Exportação para PDF:** Gera um documento formatado pronto para envio ou arquivo.
+* **Reset de Dados:** Função "Limpar Tudo" para reiniciar o relatório rapidamente.
 
-Exportação: Botão dedicado para gerar relatório em formato PDF.
+## 🛠️ Tecnologias Utilizadas
 
-Gestão de Dados: Opção para limpar todos os campos e reiniciar o relatório.
+* **Frontend:** JavaScrip / Hmtl
+* **Estilização:** CSS 
+* **Gráficos:** Bibliotecas de visualização de dados
+* **Deployment:** Vercel
 
-🛠️ Tecnologias
-Frontend: Java Script / html
+## 🚀 Como Executar Localmente
 
-Estilização: CSS customizado
-
-Gráficos: Chart.js / Recharts
-
-Exportação: jsPDF / html2canvas 
+1. **Clone o repositório:**
+   ```bash
+   git clone [https://github.com/seu-usuario/relatorio-q-a.git](https://github.com/seu-usuario/relatorio-q-a.git)
