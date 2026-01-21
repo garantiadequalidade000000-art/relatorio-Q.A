@@ -740,6 +740,12 @@
                     </div>
 
                     <div class="d-grid gap-3">
+                        <div class="form-check form-switch mb-1 no-print">
+                            <input class="form-check-input" type="checkbox" id="includeAiPdf"
+                                onchange="toggleAiInReport()">
+                            <label class="form-check-label small fw-bold text-muted" for="includeAiPdf">INCLUIR ANÁLISE
+                                IA NO PDF</label>
+                        </div>
                         <button onclick="appendSystem()"
                             class="btn btn-primary d-flex align-items-center justify-content-center gap-2">
                             <i data-lucide="plus-circle" style="width: 18px;"></i> Incluir Sistema
@@ -796,6 +802,16 @@
                             </div>
                             <h6 class="text-muted">Nenhum dado encontrado</h6>
                             <p class="text-muted small">Adicione tarefas no painel lateral para gerar o relatório.</p>
+                        </div>
+                    </div>
+
+                    <!-- AI INSIGHT SECTION IN REPORT -->
+                    <div id="aiInsightReport" class="system-block d-none"
+                        style="border-top: 2px solid var(--primary); background: rgba(79, 70, 229, 0.03); padding: 2rem; border-radius: 12px; margin-top: 3rem;">
+                        <h5 class="system-title mb-3"><i data-lucide="sparkles"></i> Insight do Assistente Pro</h5>
+                        <div id="aiInsightContent" class="text-muted"
+                            style="font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap;">
+                            Nenhuma análise realizada ainda.
                         </div>
                     </div>
                 </div>
@@ -1054,9 +1070,12 @@
                     aiResponse = data.choices[0].message.content;
                 }
 
-                aiResponse = aiResponse.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+                // Update Report Content for PDF
+                document.getElementById('aiInsightContent').innerHTML = aiResponse.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+
+                const cleanResponse = aiResponse.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
                 const target = document.getElementById(loadingId);
-                if (target) target.parentElement.innerHTML = aiResponse;
+                if (target) target.parentElement.innerHTML = cleanResponse;
 
             } catch (err) {
                 console.warn("Fallback Error:", err.message);
@@ -1123,6 +1142,16 @@
             typeChart.update();
         }
 
+        function toggleAiInReport() {
+            const isChecked = document.getElementById('includeAiPdf').checked;
+            const reportDiv = document.getElementById('aiInsightReport');
+            if (isChecked) {
+                reportDiv.classList.remove('d-none');
+            } else {
+                reportDiv.classList.add('d-none');
+            }
+        }
+
         function linkify(text) {
             const urlRegex = /(https?:\/\/[^\s\)\}\]]+)/g;
             const matches = text.match(urlRegex) || [];
@@ -1136,29 +1165,51 @@
             return cleanText;
         }
 
+        function getStatusInfo(rawType) {
+            const type = rawType.toUpperCase().trim();
+            const colorsMap = {
+                'VALIDADA': { status: 'PASSOU', color: '#10b981', badge: 'bg-success', border: 'status-passou' },
+                'CORREÇÃO': { status: 'FALHOU', color: '#ef4444', badge: 'bg-danger', border: 'status-falhou' },
+                'RETORNO': { status: 'BLOQUEADO', color: '#f59e0b', badge: 'bg-warning text-dark', border: 'status-bloqueado' },
+                'SUGESTÃO': { status: 'SUGESTÃO', color: '#06b6d4', badge: 'bg-info', border: 'status-sugestao' }
+            };
+
+            if (colorsMap[type]) return { ...colorsMap[type], type: type.charAt(0) + type.slice(1).toLowerCase() };
+
+            // Dynamic logic for new uppercase prefixes
+            const hue = (type.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) * 137) % 360;
+            return {
+                status: type,
+                type: type,
+                color: `hsl(${hue}, 70%, 45%)`,
+                badge: 'bg-secondary',
+                border: 'border-secondary',
+                customColor: `hsl(${hue}, 70%, 45%)`
+            };
+        }
+
         function appendSystem() {
             const sysName = document.getElementById('systemInput').value.trim() || "Sistema Geral";
             const rawText = document.getElementById('bulkInput').value;
-            const regex = /(?=(?:validada|correção|retorno|sugestão))/gi;
 
-            const chunks = rawText.split(regex).filter(chunk => {
-                const content = chunk.replace(/^(validada|correção|retorno|sugestão)/gi, '')
-                    .replace(/[\[\]x\*\-\s\t\n\r]/gi, '').trim();
-                return content.length > 2;
+            // Filtra e separa blocos garantindo que o prefixo esteja no início de uma linha
+            // Isso impede que "ÇÃO" seja reconhecido dentro de "CORREÇÃO"
+            const chunks = rawText.split(/\r?\n(?=[A-ZÀ-Ú\s]{3,}:)/g).filter(chunk => {
+                const trimmed = chunk.trim();
+                return trimmed.length > 5 && /[A-ZÀ-Ú]{2,}:/.test(trimmed);
             });
 
-            if (chunks.length === 0) return alert("Nenhuma tarefa válida encontrada.");
+            if (chunks.length === 0) return alert("Nenhuma tarefa válida encontrada. Use o formato PREFIXO: Descrição (em linhas separadas)");
 
             const newTasks = chunks.map(chunk => {
-                const low = chunk.toLowerCase();
-                let status = 'PASSOU', type = 'Validada', border = 'status-passou', badge = 'bg-success';
-                if (low.includes('correção')) { status = 'FALHOU'; type = 'Correção'; border = 'status-falhou'; badge = 'bg-danger'; }
-                else if (low.includes('retorno')) { status = 'BLOQUEADO'; type = 'Retorno'; border = 'status-bloqueado'; badge = 'bg-warning text-dark'; }
-                else if (low.includes('sugestão')) { status = 'SUGESTÃO'; type = 'Sugestão'; border = 'status-sugestao'; badge = 'bg-info'; }
+                const trimmedChunk = chunk.trim();
+                const match = trimmedChunk.match(/^([A-ZÀ-Ú\s]{3,}):/);
+                const prefix = match ? match[1].trim() : 'VALIDADA';
+                const info = getStatusInfo(prefix);
 
-                const cleanDesc = chunk.replace(/^(validada|correção|retorno|sugestão)[:\s\-\[\]\*\+]*/gi, '').trim();
+                const cleanDesc = trimmedChunk.replace(/^[A-ZÀ-Ú\s]{3,}[:\s\-\[\]\*\+]*/g, '').trim();
                 const title = cleanDesc.split('\n')[0].substring(0, 80);
-                return { title, status, type, border, badge, full: linkify(cleanDesc) };
+                return { title, status: info.status, type: info.type, border: info.border, badge: info.badge, customColor: info.customColor, full: linkify(cleanDesc) };
             });
 
             const existingSystem = allData.find(s => s.name.toLowerCase() === sysName.toLowerCase());
@@ -1175,47 +1226,59 @@
         function renderAll() {
             const wrapper = document.getElementById('systemsWrapper');
             wrapper.innerHTML = "";
-            let globalS = { 'PASSOU': 0, 'FALHOU': 0, 'BLOQUEADO': 0, 'SUGESTÃO': 0 };
+            let globalS = {};
 
             allData.forEach(sys => {
-                const counts = { 'PASSOU': 0, 'FALHOU': 0, 'BLOQUEADO': 0, 'SUGESTÃO': 0 };
-                sys.tasks.forEach(t => { counts[t.status]++; globalS[t.status]++; });
+                const counts = {};
+                sys.tasks.forEach(t => {
+                    counts[t.status] = (counts[t.status] || 0) + 1;
+                    globalS[t.status] = (globalS[t.status] || 0) + 1;
+                });
 
                 const block = document.createElement('div');
                 block.className = 'system-block';
+
+                const badgesHtml = Object.entries(counts).map(([status, count]) => {
+                    const info = getStatusInfo(status);
+                    const style = info.customColor ? `style="background-color: ${info.customColor} !important"` : '';
+                    return `<span class="stat-pill ${info.badge}" ${style}>${status}: ${count}</span>`;
+                }).join('');
+
                 block.innerHTML = `
                 <div class="system-header">
                     <h5 class="system-title"><i data-lucide="package" style="width:20px;"></i> ${sys.name}</h5>
                     <div class="d-flex flex-wrap gap-1">
                         <span class="stat-pill total-badge">Total: ${sys.tasks.length}</span>
-                        <span class="stat-pill bg-success">Passou: ${counts.PASSOU}</span>
-                        <span class="stat-pill bg-danger">Falhou: ${counts.FALHOU}</span>
-                        <span class="stat-pill bg-warning text-dark">Bloqueado: ${counts.BLOQUEADO}</span>
-                        <span class="stat-pill bg-info">Sugestão: ${counts.SUGESTÃO}</span>
+                        ${badgesHtml}
                     </div>
                 </div>
                 <div class="tasks-grid">
-                    ${sys.tasks.map((t, idx) => `
-                        <div class="task-card ${t.border}">
+                    ${sys.tasks.map((t, idx) => {
+                    const style = t.customColor ? `style="border-left-color: ${t.customColor} !important"` : '';
+                    const badgeStyle = t.customColor ? `style="background-color: ${t.customColor} !important"` : '';
+                    return `
+                        <div class="task-card ${t.border}" ${style}>
                             <div class="d-flex justify-content-between align-items-start mb-2">
                                 <span class="badge border bg-light text-muted" style="font-size:0.65rem">#${idx + 1}</span>
-                                <span class="badge ${t.badge} rounded-pill" style="font-size: 0.65rem; padding: 4px 10px;">${t.status}</span>
+                                <span class="badge ${t.badge} rounded-pill" style="font-size: 0.65rem; padding: 4px 10px;" ${badgeStyle}>${t.status}</span>
                             </div>
                             <h6 class="task-title">${t.title}</h6>
                             <div class="task-description">${t.full}</div>
                         </div>
-                    `).join('')}
+                    `}).join('')}
                 </div>`;
                 wrapper.appendChild(block);
             });
 
             lucide.createIcons();
             document.getElementById('globalCount').innerText = Object.values(globalS).reduce((a, b) => a + b, 0);
-            document.getElementById('globalSummary').innerHTML = `
-                <span class="badge bg-success opacity-75">Passou: ${globalS.PASSOU}</span>
-                <span class="badge bg-danger opacity-75">Falhou: ${globalS.FALHOU}</span>
-                <span class="badge bg-warning text-dark opacity-75">Bloqueado: ${globalS.BLOQUEADO}</span>
-                <span class="badge bg-info opacity-75">Sugestão: ${globalS.SUGESTÃO}</span>`;
+
+            document.getElementById('globalSummary').innerHTML = Object.entries(globalS).map(([status, count]) => {
+                const info = getStatusInfo(status);
+                const style = info.customColor ? `style="background-color: ${info.customColor} !important"` : '';
+                return `<span class="badge ${info.badge} opacity-75" ${style}>${status}: ${count}</span>`;
+            }).join('');
+
             updateCharts(globalS);
         }
 
@@ -1253,10 +1316,20 @@
         }
 
         function updateCharts(s) {
-            const vals = [s.PASSOU, s.FALHOU, s.BLOQUEADO, s.SUGESTÃO];
-            statusChart.data.datasets[0].data = vals;
-            typeChart.data.datasets[0].data = vals;
-            statusChart.update(); typeChart.update();
+            const labels = Object.keys(s);
+            const counts = Object.values(s);
+            const bgColors = labels.map(label => getStatusInfo(label).color);
+
+            statusChart.data.labels = labels;
+            statusChart.data.datasets[0].data = counts;
+            statusChart.data.datasets[0].backgroundColor = bgColors;
+
+            typeChart.data.labels = labels;
+            typeChart.data.datasets[0].data = counts;
+            typeChart.data.datasets[0].backgroundColor = bgColors;
+
+            statusChart.update();
+            typeChart.update();
         }
 
         function clearAll() { if (confirm("Limpar tudo?")) { allData = []; renderAll(); document.getElementById('emptyMsg').style.display = 'block'; } }
