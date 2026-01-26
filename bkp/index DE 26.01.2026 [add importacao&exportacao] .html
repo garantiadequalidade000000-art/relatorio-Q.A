@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Q.A. Report Pro - Modern Dashboard</title>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5.3 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js DataLabels Plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <!-- Lucide Icons (Simplified) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-main: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --input-bg: #ffffff;
+
+            --color-passou: #10b981;
+            --color-falhou: #ef4444;
+            --color-bloqueado: #f59e0b;
+            --color-sugestao: #06b6d4;
+
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-md: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+            --radius: 12px;
+            --chart-grid: #e2e8f0;
+            --chart-text: #64748b;
+        }
+
+        [data-theme="dark"] {
+            --bg-main: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --input-bg: #0f172a;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.5);
+            --shadow-md: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
+            --chart-grid: #334155;
+            --chart-text: #94a3b8;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            color: var(--text-main);
+            overflow-x: hidden;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Container Layout */
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Sidebar Card */
+        .sidebar-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-md);
+            padding: 1.5rem;
+            position: sticky;
+            top: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        /* Input Styles */
+        .form-control {
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--input-bg);
+            color: var(--text-main);
+            padding: 0.75rem 1rem;
+            font-size: 0.95rem;
+            transition: border-color 0.2s, box-shadow 0.2s, background-color 0.3s;
+        }
+
+        .form-control::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+            background-color: var(--input-bg);
+            color: var(--text-main);
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background-color: var(--primary);
+            border: none;
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-dark {
+            background-color: #1e293b;
+            border-radius: 8px;
+            border: none;
+        }
+
+        [data-theme="dark"] .btn-dark {
+            background-color: #334155;
+        }
+
+        .btn-outline-danger {
+            border-radius: 8px;
+        }
+
+        /* Main Area */
+        #captureArea {
+            background: var(--card-bg);
+            padding: 3rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            min-height: 800px;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        .header-title {
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Charts Section */
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .chart-card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            height: 350px;
+            transition: transform 0.3s ease, background-color 0.3s, border-color 0.3s;
+        }
+
+        .chart-card:hover {
+            transform: translateY(-4px);
+        }
+
+        /* Badges & Pills */
+        .stat-pill {
+            padding: 6px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            letter-spacing: 0.025em;
+            text-transform: uppercase;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .total-badge {
+            background: #334155;
+        }
+
+        /* System Blocks */
+        .system-block {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .system-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .system-title {
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Tasks Grid */
+        .tasks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .task-card {
+            border: 1px solid var(--border-color);
+            border-left: 5px solid #dee2e6;
+            padding: 1.25rem;
+            background: var(--card-bg);
+            border-radius: 8px;
+            min-height: 140px;
+            transition: all 0.2s ease, background-color 0.3s, border-color 0.3s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            break-inside: avoid;
+            /* Previne quebra no PDF */
+        }
+
+        .task-card:hover {
+            box-shadow: var(--shadow);
+            transform: scale(1.02);
+        }
+
+        .status-passou {
+            border-left-color: var(--color-passou) !important;
+        }
+
+        .status-falhou {
+            border-left-color: var(--color-falhou) !important;
+        }
+
+        .status-bloqueado {
+            border-left-color: var(--color-bloqueado) !important;
+        }
+
+        .status-sugestao {
+            border-left-color: var(--color-sugestao) !important;
+        }
+
+        .task-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 0.75rem;
+            line-height: 1.4;
+            color: var(--text-main);
+        }
+
+        .task-description {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            white-space: pre-wrap;
+            margin-top: auto;
+        }
+
+        .task-link {
+            color: var(--primary);
+            text-decoration: none;
+            word-break: break-all;
+            font-weight: 500;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+
+        .task-link:hover {
+            border-bottom-color: var(--primary);
+        }
+
+        /* Summary Stats Area */
+        .summary-stats {
+            background: var(--bg-main);
+            border-radius: 10px;
+            padding: 1.25rem;
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        /* Theme Toggle Styling */
+        .theme-toggle {
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-main);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .theme-toggle:hover {
+            background-color: var(--bg-main);
+        }
+
+        /* AJUSTE PARA PDF / IMPRESSÃO */
+        @media print {
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            @page {
+                margin: 0.5cm;
+                size: auto;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            /* Forçar col-lg-8 a ocupar 100% no PDF */
+            .col-lg-8 {
+                width: 100% !important;
+                flex: 0 0 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .row {
+                display: block !important;
+                margin: 0 !important;
+            }
+
+            body {
+                background: var(--bg-main) !important;
+                color: var(--text-main) !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            .app-container {
+                padding: 0 !important;
+                margin: 0 !important;
+                max-width: 100% !important;
+                width: 100% !important;
+            }
+
+            #captureArea {
+                padding: 1.5rem !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                border: none !important;
+                box-shadow: none !important;
+                background: var(--card-bg) !important;
+                border-radius: 0 !important;
+            }
+
+            .tasks-grid {
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr) !important;
+                gap: 12px !important;
+                width: 100% !important;
+            }
+
+            .task-card {
+                break-inside: avoid;
+                border: 1px solid var(--border-color) !important;
+                background: var(--card-bg) !important;
+                width: 100% !important;
+            }
+
+            .system-block {
+                break-inside: auto;
+                page-break-inside: auto;
+                margin-top: 2rem !important;
+            }
+
+            .system-header {
+                width: 100% !important;
+            }
+
+            .charts-container {
+                grid-template-columns: 1fr 1fr !important;
+                break-inside: avoid;
+                width: 100% !important;
+                gap: 15px !important;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* AI Chatbot Styles - PREMIUM RE-DESIGN */
+        .chat-trigger {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 1100;
+            background: linear-gradient(135deg, var(--primary), #6366f1);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 50px;
+            box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-trigger:hover {
+            transform: scale(1.05) translateY(-5px);
+            box-shadow: 0 15px 30px -5px rgba(79, 70, 229, 0.6);
+        }
+
+        .chat-window {
+            position: fixed;
+            bottom: 6rem;
+            right: 2rem;
+            width: 420px;
+            height: 600px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 20px 50px -12px rgb(0 0 0 / 0.25);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            z-index: 1100;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(30px) scale(0.95);
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            overflow: hidden;
+        }
+
+        .chat-window.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, var(--primary), #4338ca);
+            color: white;
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-tabs {
+            background: rgba(0, 0, 0, 0.05);
+            padding: 4px;
+            display: flex;
+            gap: 4px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .chat-tab {
+            flex: 1;
+            padding: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-muted);
+        }
+
+        .chat-tab.active {
+            background: var(--card-bg);
+            color: var(--primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            background: linear-gradient(to bottom, transparent, rgba(79, 70, 229, 0.02));
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            position: relative;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .message.system {
+            background: var(--bg-main);
+            color: var(--text-main);
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .message.user {
+            background: var(--primary);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+        }
+
+        .chat-input-area {
+            padding: 1.25rem;
+            border-top: 1px solid var(--border-color);
+            background: var(--card-bg);
+        }
+
+        .chat-settings {
+            padding: 1.5rem;
+            display: none;
+            flex-direction: column;
+            gap: 1rem;
+            height: 100%;
+            background: var(--card-bg);
+            overflow-y: auto;
+        }
+
+        .chat-settings.active {
+            display: flex;
+        }
+
+        .api-key-input {
+            font-family: monospace;
+            font-size: 0.8rem;
+        }
+
+        .typing-dots {
+            display: inline-flex;
+            gap: 4px;
+        }
+
+        .typing-dots span {
+            width: 4px;
+            height: 4px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .typing-dots span:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0);
+            }
+
+            40% {
+                transform: scale(1.0);
+            }
+        }
+
+        .system-block {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app-container">
+        <!-- AI Chatbot Trigger -->
+        <button class="chat-trigger no-print" onclick="toggleChat()" id="chatTrigger">
+            <div class="position-relative">
+                <i data-lucide="sparkles"></i>
+                <span
+                    class="position-absolute top-0 start-100 translate-middle p-1 bg-success border border-light rounded-circle"></span>
+            </div>
+            <span>Assistente Pro</span>
+        </button>
+
+        <!-- Chat Window -->
+        <div class="chat-window no-print" id="chatWindow">
+            <div class="chat-header">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-2 bg-white bg-opacity-25 rounded-circle">
+                        <i data-lucide="bot" style="width: 20px;"></i>
+                    </div>
+                    <div>
+                        <h6 class="m-0 fw-bold">Q.A. Insight Pro <small class="fw-normal opacity-50">v1.4</small></h6>
+                        <small class="opacity-75" id="aiStatus">Modo Local (Offline)</small>
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-link text-white p-1" onclick="toggleSettings()" title="Configurações">
+                        <i data-lucide="settings" style="width: 18px;"></i>
+                    </button>
+                    <button class="btn-close btn-close-white" onclick="toggleChat()"></button>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="chat-tabs" id="chatTabs">
+                <div class="chat-tab active" onclick="switchChatTab('chat')">Conversa</div>
+                <div class="chat-tab" onclick="switchChatTab('settings')">Configurações</div>
+            </div>
+
+            <!-- Chat Content -->
+            <div class="chat-messages" id="chatMessages">
+                <div class="message system">
+                    Olá! Sou seu assistente especializado em Qualidade. Posso analisar seus relatórios ou ajudar com
+                    dúvidas de teste.
+                    <div class="mt-3 d-flex flex-wrap gap-2">
+                        <button class="btn btn-sm btn-light border py-1 px-3 rounded-pill"
+                            onclick="askAICurrentReport()">
+                            📊 Analisar Report
+                        </button>
+                        <button class="btn btn-sm btn-light border py-1 px-3 rounded-pill"
+                            onclick="sendMessage('Como melhorar meus testes?')">
+                            💡 Dicas de Q.A.
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Content (Hidden) -->
+            <div class="chat-settings" id="chatSettings">
+                <h6 class="fw-bold mb-3">Configurações de IA</h6>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Provedor</label>
+                    <select class="form-select form-select-sm" id="aiProvider" onchange="updateProviderFields()">
+                        <option value="local">Local (Sem API Key)</option>
+                        <option value="openai">OpenAI (GPT-4o/3.5)</option>
+                        <option value="gemini">Google Gemini</option>
+                        <option value="vercel">Vercel Gateway (Existente)</option>
+                    </select>
+                </div>
+
+                <div id="apiKeySection" style="display: none;">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">API Key</label>
+                        <input type="password" id="apiKeyInput" class="form-control form-control-sm api-key-input"
+                            placeholder="sk-...">
+                    </div>
+                    <div class="mb-3" id="modelSection">
+                        <label class="form-label small fw-bold">Modelo</label>
+                        <input type="text" id="apiModelInput" class="form-control form-control-sm" placeholder="gpt-4o">
+                    </div>
+                </div>
+
+                <div class="mt-auto p-3 bg-light rounded-3">
+                    <p class="small text-muted mb-2">
+                        <i data-lucide="info" style="width: 14px;"></i>
+                        As chaves são armazenadas apenas localmente no seu navegador.
+                    </p>
+                    <button class="btn btn-sm btn-outline-primary w-100" id="btnCheckModels"
+                        onclick="checkGeminiModels()" style="font-size: 0.7rem;">
+                        <i data-lucide="activity" style="width: 12px;"></i> Testar Conectividade
+                    </button>
+                    <div id="checkResult" class="small mt-2"
+                        style="display:none; font-size: 0.65rem; max-height: 60px; overflow-y: auto;"></div>
+                </div>
+                <button class="btn btn-primary btn-sm mt-3" onclick="saveAISettings()">Salvar e Voltar</button>
+            </div>
+
+            <!-- Input Area -->
+            <div class="chat-input-area" id="inputArea">
+                <div class="input-group">
+                    <input type="text" id="chatInput" class="form-control border-0 bg-light"
+                        placeholder="Envie uma mensagem..." onkeypress="handleChatKey(event)">
+                    <button class="btn btn-primary px-3" onclick="sendMessage()">
+                        <i data-lucide="send" style="width: 18px;"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="row g-4">
+            <!-- Sidebar -->
+            <div class="col-lg-4 no-print">
+                <div class="sidebar-card">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-primary text-white p-2 rounded-3 me-3">
+                                <i data-lucide="cog" class="w-6 h-6"></i>
+                            </div>
+                            <h5 class="fw-bold mb-0">Configurações</h5>
+                        </div>
+                        <button onclick="toggleTheme()" class="theme-toggle" id="themeToggle" title="Alternar Tema">
+                            <i data-lucide="sun" id="themeIcon" style="width: 20px;"></i>
+                        </button>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">NOME DO SISTEMA</label>
+                        <input type="text" id="systemInput" class="form-control"
+                            placeholder="E.g. Portal Admin, App Mobile...">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted">DADOS EM MASSA</label>
+                        <textarea id="bulkInput" class="form-control" rows="12"
+                            placeholder="VALIDADA: Login efetuado com sucesso https://jira.com/QA-1&#10;CORREÇÃO: Erro ao salvar perfil..."></textarea>
+                        <div class="form-text small mt-2">Use prefixos como VALIDADA, CORREÇÃO, RETORNO ou SUGESTÃO.
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-3">
+                        <div class="form-check form-switch mb-1 no-print">
+                            <input class="form-check-input" type="checkbox" id="includeAiPdf"
+                                onchange="toggleAiInReport()">
+                            <label class="form-check-label small fw-bold text-muted" for="includeAiPdf">INCLUIR ANÁLISE
+                                IA NO PDF</label>
+                        </div>
+                        <button onclick="appendSystem()"
+                            class="btn btn-primary d-flex align-items-center justify-content-center gap-2">
+                            <i data-lucide="plus-circle" style="width: 18px;"></i> Incluir Sistema
+                        </button>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <button onclick="window.print()"
+                                    class="btn btn-dark w-100 d-flex align-items-center justify-content-center gap-2">
+                                    <i data-lucide="file-text" style="width: 16px;"></i> PDF
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button onclick="clearAll()"
+                                    class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2">
+                                    <i data-lucide="trash-2" style="width: 16px;"></i> Limpar
+                                </button>
+                            </div>
+                        </div>
+                        <div class="row g-2 mt-2">
+                            <div class="col-6">
+                                <button onclick="exportData()"
+                                    class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2"
+                                    style="font-size: 0.8rem;">
+                                    <i data-lucide="download" style="width: 14px;"></i> Exportar
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button onclick="document.getElementById('importFile').click()"
+                                    class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2"
+                                    style="font-size: 0.8rem;">
+                                    <i data-lucide="upload" style="width: 14px;"></i> Importar
+                                </button>
+                                <input type="file" id="importFile" class="d-none" accept=".json"
+                                    onchange="importData(event)">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 summary-stats">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="fw-bold m-0">Total de Tarefas</h6>
+                            <span id="globalCount" class="badge bg-primary rounded-pill px-3">0</span>
+                        </div>
+                        <hr class="my-3 opacity-10">
+                        <div id="globalSummary" class="small text-muted d-flex flex-wrap gap-2">
+                            <!-- Summary items inject here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-lg-8">
+                <div id="captureArea">
+                    <header class="text-center mb-5">
+                        <h1 class="header-title">Relatório de Execução Q.A.</h1>
+                        <p class="text-muted d-flex align-items-center justify-content-center gap-2">
+                            <i data-lucide="calendar" style="width: 14px;"></i>
+                            Gerado em: <span id="genDate" class="fw-semibold text-dark">--/--/---- --:--</span>
+                        </p>
+                    </header>
+
+                    <div class="charts-container">
+                        <div class="chart-card shadow-sm"><canvas id="statusChart"></canvas></div>
+                        <div class="chart-card shadow-sm"><canvas id="typeChart"></canvas></div>
+                    </div>
+
+                    <div id="systemsWrapper">
+                        <div class="text-center py-5 border rounded-4 border-dashed bg-light" id="emptyMsg">
+                            <div class="bg-white p-3 rounded-circle shadow-sm d-inline-block mb-3">
+                                <i data-lucide="inbox" class="text-muted" style="width: 32px; height: 32px;"></i>
+                            </div>
+                            <h6 class="text-muted">Nenhum dado encontrado</h6>
+                            <p class="text-muted small">Adicione tarefas no painel lateral para gerar o relatório.</p>
+                        </div>
+                    </div>
+
+                    <!-- AI INSIGHT SECTION IN REPORT -->
+                    <div id="aiInsightReport" class="system-block d-none"
+                        style="border-top: 2px solid var(--primary); background: rgba(79, 70, 229, 0.03); padding: 2rem; border-radius: 12px; margin-top: 3rem;">
+                        <h5 class="system-title mb-3"><i data-lucide="sparkles"></i> Insight do Assistente Pro</h5>
+                        <div id="aiInsightContent" class="text-muted"
+                            style="font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap;">
+                            Nenhuma análise realizada ainda.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CORE LOGIC 
+        let allData = [];
+        let statusChart, typeChart;
+        const colors = { passou: '#10b981', falhou: '#ef4444', bloqueado: '#f59e0b', sugestao: '#06b6d4' };
+
+        // AI Chat Enhanced Config
+        let AI_STATE = {
+            provider: localStorage.getItem('qa-ai-provider') || 'local',
+            key: localStorage.getItem('qa-ai-key') || '',
+            model: localStorage.getItem('qa-ai-model') || 'gpt-4o',
+            history: []
+        };
+
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Chat UI Toggle
+        function toggleChat() {
+            const chat = document.getElementById('chatWindow');
+            chat.classList.toggle('active');
+        }
+
+        function toggleSettings() {
+            const settings = document.getElementById('chatSettings');
+            const messages = document.getElementById('chatMessages');
+            const input = document.getElementById('inputArea');
+            const tabs = document.getElementById('chatTabs');
+
+            settings.classList.toggle('active');
+            if (settings.classList.contains('active')) {
+                messages.style.display = 'none';
+                input.style.display = 'none';
+                switchChatTab('settings');
+            } else {
+                messages.style.display = 'flex';
+                input.style.display = 'block';
+                switchChatTab('chat');
+            }
+        }
+
+        function switchChatTab(tab) {
+            const tabs = document.querySelectorAll('.chat-tab');
+            tabs.forEach(t => t.classList.remove('active'));
+            if (tab === 'chat') {
+                tabs[0].classList.add('active');
+                document.getElementById('chatSettings').classList.remove('active');
+                document.getElementById('chatMessages').style.display = 'flex';
+                document.getElementById('inputArea').style.display = 'block';
+            } else {
+                tabs[1].classList.add('active');
+                document.getElementById('chatSettings').classList.add('active');
+                document.getElementById('chatMessages').style.display = 'none';
+                document.getElementById('inputArea').style.display = 'none';
+            }
+        }
+
+        function updateProviderFields() {
+            const provider = document.getElementById('aiProvider').value;
+            const keySection = document.getElementById('apiKeySection');
+            const modelSection = document.getElementById('modelSection');
+            const modelInput = document.getElementById('apiModelInput');
+
+            if (provider === 'local') {
+                keySection.style.display = 'none';
+            } else {
+                keySection.style.display = 'block';
+                modelSection.style.display = 'block';
+                modelInput.placeholder = (provider === 'gemini') ? 'gemini-1.5-flash' : 'gpt-4o';
+            }
+        }
+
+        function saveAISettings() {
+            const provider = document.getElementById('aiProvider').value;
+            const key = document.getElementById('apiKeyInput').value;
+            const modelInput = document.getElementById('apiModelInput').value.trim();
+
+            AI_STATE.provider = provider;
+            AI_STATE.key = key;
+
+            // Set reasonable defaults if model is empty
+            if (modelInput) {
+                AI_STATE.model = modelInput;
+            } else {
+                AI_STATE.model = (provider === 'gemini') ? 'gemini-1.5-flash' : 'gpt-4o';
+            }
+
+            localStorage.setItem('qa-ai-provider', AI_STATE.provider);
+            localStorage.setItem('qa-ai-key', AI_STATE.key);
+            localStorage.setItem('qa-ai-model', AI_STATE.model);
+
+            document.getElementById('aiStatus').innerText = AI_STATE.provider === 'local' ? 'Modo Local' : 'IA Cloud Ativa';
+            toggleSettings();
+        }
+
+        // Pre-fill settings
+        window.addEventListener('DOMContentLoaded', () => {
+            const provEl = document.getElementById('aiProvider');
+            const keyEl = document.getElementById('apiKeyInput');
+            const modEl = document.getElementById('apiModelInput');
+            if (provEl) provEl.value = AI_STATE.provider;
+            if (keyEl) keyEl.value = AI_STATE.key;
+            if (modEl) modEl.value = AI_STATE.model;
+            const statusEl = document.getElementById('aiStatus');
+            if (statusEl) statusEl.innerText = AI_STATE.provider === 'local' ? 'Modo Local' : 'IA Cloud Ativa';
+            updateProviderFields();
+        });
+
+        function handleChatKey(e) {
+            if (e.key === 'Enter') sendMessage();
+        }
+
+        function appendMessage(role, text) {
+            const container = document.getElementById('chatMessages');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${role}`;
+            msgDiv.innerHTML = text;
+            container.appendChild(msgDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Logic for Intelligent Analysis (Local)
+        function getLocalResponse(text) {
+            const lowText = text.toLowerCase();
+
+            if (lowText.includes("analise") || lowText.includes("report") || lowText.includes("status")) {
+                if (allData.length === 0) return "Ainda não há dados para analisar. Adicione tarefas no menu lateral! 🚀";
+
+                let totalTasks = 0;
+                let passed = 0;
+                let failed = 0;
+                allData.forEach(s => {
+                    totalTasks += s.tasks.length;
+                    passed += s.tasks.filter(t => t.status === 'PASSOU').length;
+                    failed += s.tasks.filter(t => t.status === 'FALHOU').length;
+                });
+
+                const percentage = totalTasks > 0 ? ((passed / totalTasks) * 100).toFixed(1) : 0;
+
+                return `### 📊 Insight Local<br><br>` +
+                    `• Cobertura: **${totalTasks}** cenários<br>` +
+                    `• Sucesso: **${percentage}%**<br>` +
+                    `• Críticos: **${failed}** falhas encontradas.<br><br>` +
+                    `Dica: Use uma API Key para análise comportamental avançada!`;
+            }
+
+            return "Olá! Estou operando em **Modo Local**. Posso processar estatísticas do seu relatório atual. Para discussões complexas sobre arquitetura de testes, ative o modo **OpenAI** ou **Gemini** nas configurações! ⚙️";
+        }
+
+        async function sendMessage(overrideText = null) {
+            const input = document.getElementById('chatInput');
+            const text = overrideText || input.value.trim();
+            if (!text) return;
+
+            if (!overrideText) input.value = '';
+            appendMessage('user', text);
+
+            const loadingId = 'loading-' + Date.now();
+            appendMessage('system', `<div id="${loadingId}" class="typing-dots"><span></span><span></span><span></span></div>`);
+
+            // Context Injection (Concise)
+            let fullPrompt = text;
+            if (allData.length > 0) {
+                const summary = allData.map(s => {
+                    return `Sistema: ${s.name}\nTasks: ${s.tasks.map(t => `[${t.status}] ${t.title}`).join(', ')}`;
+                }).join('\n\n');
+                fullPrompt = `DADOS DO RELATÓRIO Q.A.:\n${summary}\n\nPERGUNTA: ${text}`;
+            }
+
+            try {
+                const apiKey = AI_STATE.key ? AI_STATE.key.trim() : '';
+                if (AI_STATE.provider === 'local' || !apiKey) {
+                    throw new Error("USE_LOCAL");
+                }
+
+                let response;
+                if (AI_STATE.provider === 'openai' || AI_STATE.provider === 'vercel') {
+                    const url = AI_STATE.provider === 'vercel' ? "https://ai-gateway.vercel.sh/v1/chat/completions" : "https://api.openai.com/v1/chat/completions";
+                    response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${apiKey}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            model: AI_STATE.model || 'gpt-4o',
+                            messages: [{ role: 'user', content: fullPrompt }],
+                            temperature: 0.7
+                        })
+                    });
+                } else if (AI_STATE.provider === 'gemini') {
+                    // SELF-HEALING LOGIC FOR GEMINI
+                    const tryModels = [AI_STATE.model, 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro'].filter(Boolean);
+                    let lastErr = "";
+
+                    for (let mName of tryModels) {
+                        const mClean = mName.toLowerCase().trim();
+                        try {
+                            const url = `https://generativelanguage.googleapis.com/v1beta/models/${mClean}:generateContent?key=${apiKey}`;
+                            response = await fetch(url, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ contents: [{ parts: [{ text: fullPrompt }] }] })
+                            });
+                            if (response.ok) break;
+                            const eData = await response.json();
+                            lastErr = eData.error?.message || `Erro ${response.status}`;
+                        } catch (e) { lastErr = e.message; }
+                    }
+
+                    if (!response || !response.ok) {
+                        try {
+                            const lRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+                            const lData = await lRes.json();
+                            if (lData.models) {
+                                const valid = lData.models.find(m => m.supportedGenerationMethods.includes('generateContent'))?.name;
+                                if (valid) response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${valid}:generateContent?key=${apiKey}`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ contents: [{ parts: [{ text: fullPrompt }] }] })
+                                });
+                            }
+                        } catch (e) { }
+                    }
+                    if (!response || !response.ok) throw new Error(lastErr || "Chave sem modelos disponíveis.");
+                }
+
+                if (!response || !response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    const errorMsg = errData.error?.message || `Erro ${response.status}`;
+                    if (response.status === 404) {
+                        throw new Error(`Modelo "${AI_STATE.model || 'gemini-1.5-flash'}" não encontrado para esta chave.`);
+                    }
+                    throw new Error(errorMsg);
+                }
+
+                const data = await response.json();
+                let aiResponse = "";
+
+                if (AI_STATE.provider === 'gemini') {
+                    if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+                        aiResponse = data.candidates[0].content.parts[0].text;
+                    } else if (data.promptFeedback?.blockReason) {
+                        throw new Error(`Bloqueado por segurança: ${data.promptFeedback.blockReason}`);
+                    } else {
+                        throw new Error("Resposta vazia da API Gemini.");
+                    }
+                } else {
+                    aiResponse = data.choices[0].message.content;
+                }
+
+                // Update Report Content for PDF
+                document.getElementById('aiInsightContent').innerHTML = aiResponse.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+
+                const cleanResponse = aiResponse.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+                const target = document.getElementById(loadingId);
+                if (target) target.parentElement.innerHTML = cleanResponse;
+
+            } catch (err) {
+                console.warn("Fallback Error:", err.message);
+                setTimeout(() => {
+                    const target = document.getElementById(loadingId);
+                    if (!target) return;
+
+                    if (err.message === "USE_LOCAL") {
+                        target.parentElement.innerHTML = getLocalResponse(text);
+                    } else {
+                        target.parentElement.innerHTML = `<div class="p-2 border border-danger rounded mb-2 bg-danger bg-opacity-10" style="font-size: 0.8rem;">
+                            <b class="text-danger">Erro na API Cloud:</b><br>
+                            ${err.message}<br>
+                            <span class="text-muted small">Dica: Se o erro for 404, sua chave não tem acesso ao modelo escolhido. Tente 'gemini-pro' ou use o botão 'Testar Conectividade'.</span>
+                        </div>` + getLocalResponse(text);
+                    }
+                }, 800);
+            }
+        }
+
+        function askAICurrentReport() {
+            sendMessage("Analise meu relatório atual e me dê um feedback sobre a qualidade do sistema.");
+        }
+
+        // Theme Toggle Logic
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('qa-report-theme', newTheme);
+            updateThemeUI();
+            updateChartsColors();
+        }
+
+        function updateThemeUI() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const icon = document.getElementById('themeIcon');
+            if (currentTheme === 'dark') {
+                icon.setAttribute('data-lucide', 'moon');
+                document.getElementById('genDate').classList.replace('text-dark', 'text-white');
+            } else {
+                icon.setAttribute('data-lucide', 'sun');
+                document.getElementById('genDate').classList.replace('text-white', 'text-dark');
+            }
+            lucide.createIcons();
+        }
+
+        function updateChartsColors() {
+            if (!statusChart || !typeChart) return;
+            const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--chart-grid').trim();
+            const textColor = getComputedStyle(document.documentElement).getPropertyValue('--chart-text').trim();
+
+            statusChart.options.plugins.title.color = textColor;
+            statusChart.options.plugins.legend.labels.color = textColor;
+
+            typeChart.options.plugins.title.color = textColor;
+            typeChart.options.plugins.datalabels.color = textColor;
+            typeChart.options.plugins.datalabels.textStrokeColor = currentTheme === 'dark' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)';
+
+            typeChart.options.scales.x.ticks.color = textColor;
+            typeChart.options.scales.y.ticks.color = textColor;
+            typeChart.options.scales.x.grid.color = gridColor;
+            typeChart.options.scales.y.grid.color = gridColor;
+
+            statusChart.update();
+            typeChart.update();
+        }
+
+        function toggleAiInReport() {
+            const isChecked = document.getElementById('includeAiPdf').checked;
+            const reportDiv = document.getElementById('aiInsightReport');
+            if (isChecked) {
+                reportDiv.classList.remove('d-none');
+            } else {
+                reportDiv.classList.add('d-none');
+            }
+        }
+
+        function linkify(text) {
+            const urlRegex = /(https?:\/\/[^\s\)\}\]]+)/g;
+            const matches = text.match(urlRegex) || [];
+            const uniqueUrls = [...new Set(matches)];
+            let cleanText = text.replace(urlRegex, '').replace(/[\[\]\(\)\{\}]/g, '').trim();
+
+            if (uniqueUrls.length > 0) {
+                const onlyOneLink = uniqueUrls[0];
+                return cleanText + `<br><a href="${onlyOneLink}" target="_blank" class="task-link">${onlyOneLink}</a>`;
+            }
+            return cleanText;
+        }
+
+        function getStatusInfo(rawType) {
+            const type = rawType.toUpperCase().trim();
+            const colorsMap = {
+                'VALIDADA': { status: 'PASSOU', color: '#10b981', badge: 'bg-success', border: 'status-passou' },
+                'CORREÇÃO': { status: 'FALHOU', color: '#ef4444', badge: 'bg-danger', border: 'status-falhou' },
+                'RETORNO': { status: 'BLOQUEADO', color: '#f59e0b', badge: 'bg-warning text-dark', border: 'status-bloqueado' },
+                'SUGESTÃO': { status: 'SUGESTÃO', color: '#06b6d4', badge: 'bg-info', border: 'status-sugestao' }
+            };
+
+            if (colorsMap[type]) return { ...colorsMap[type], type: type.charAt(0) + type.slice(1).toLowerCase() };
+
+            // Dynamic logic for new uppercase prefixes
+            const hue = (type.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) * 137) % 360;
+            return {
+                status: type,
+                type: type,
+                color: `hsl(${hue}, 70%, 45%)`,
+                badge: 'bg-secondary',
+                border: 'border-secondary',
+                customColor: `hsl(${hue}, 70%, 45%)`
+            };
+        }
+
+        function appendSystem() {
+            const sysName = document.getElementById('systemInput').value.trim() || "Sistema Geral";
+            const rawText = document.getElementById('bulkInput').value;
+
+            // Filtra e separa blocos garantindo que o prefixo esteja no início de uma linha
+            // Isso impede que "ÇÃO" seja reconhecido dentro de "CORREÇÃO"
+            const chunks = rawText.split(/\r?\n(?=[A-ZÀ-Ú\s]{3,}:)/g).filter(chunk => {
+                const trimmed = chunk.trim();
+                return trimmed.length > 5 && /[A-ZÀ-Ú]{2,}:/.test(trimmed);
+            });
+
+            if (chunks.length === 0) return alert("Nenhuma tarefa válida encontrada. Use o formato PREFIXO: Descrição (em linhas separadas)");
+
+            const newTasks = chunks.map(chunk => {
+                const trimmedChunk = chunk.trim();
+                const match = trimmedChunk.match(/^([A-ZÀ-Ú\s]{3,}):/);
+                const prefix = match ? match[1].trim() : 'VALIDADA';
+                const info = getStatusInfo(prefix);
+
+                const cleanDesc = trimmedChunk.replace(/^[A-ZÀ-Ú\s]{3,}[:\s\-\[\]\*\+]*/g, '').trim();
+                const title = cleanDesc.split('\n')[0].substring(0, 80);
+                return { title, status: info.status, type: info.type, border: info.border, badge: info.badge, customColor: info.customColor, full: linkify(cleanDesc) };
+            });
+
+            const existingSystem = allData.find(s => s.name.toLowerCase() === sysName.toLowerCase());
+            if (existingSystem) existingSystem.tasks.push(...newTasks);
+            else allData.push({ name: sysName, tasks: newTasks });
+
+            document.getElementById('genDate').innerText = new Date().toLocaleString('pt-BR');
+            renderAll();
+            document.getElementById('bulkInput').value = "";
+            document.getElementById('systemInput').value = "";
+            document.getElementById('emptyMsg').style.display = 'none';
+        }
+
+        function renderAll() {
+            const wrapper = document.getElementById('systemsWrapper');
+            wrapper.innerHTML = "";
+            let globalS = {};
+
+            allData.forEach((sys, sysIdx) => {
+                const counts = {};
+                sys.tasks.forEach(t => {
+                    counts[t.status] = (counts[t.status] || 0) + 1;
+                    globalS[t.status] = (globalS[t.status] || 0) + 1;
+                });
+
+                const block = document.createElement('div');
+                block.className = 'system-block';
+
+                const badgesHtml = Object.entries(counts).map(([status, count]) => {
+                    const info = getStatusInfo(status);
+                    const style = info.customColor ? `style="background-color: ${info.customColor} !important"` : '';
+                    return `<span class="stat-pill ${info.badge}" ${style}>${status}: ${count}</span>`;
+                }).join('');
+
+                block.innerHTML = `
+                <div class="system-header">
+                    <h5 class="system-title"><i data-lucide="package" style="width:20px;"></i> ${sys.name}</h5>
+                    <div class="d-flex flex-wrap gap-1">
+                        <span class="stat-pill total-badge">Total: ${sys.tasks.length}</span>
+                        ${badgesHtml}
+                    </div>
+                </div>
+                <div class="tasks-grid">
+                    ${sys.tasks.map((t, idx) => {
+                    const style = t.customColor ? `style="border-left-color: ${t.customColor} !important"` : '';
+                    const badgeStyle = t.customColor ? `style="background-color: ${t.customColor} !important"` : '';
+                    return `
+                        <div class="task-card ${t.border}" ${style}>
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge border bg-light text-muted" style="font-size:0.65rem">#${idx + 1}</span>
+                                <div class="d-flex gap-1 no-print">
+                                    <button onclick="editTask(${sysIdx}, ${idx})" class="btn p-0 text-primary opacity-50 hover-opacity-100" title="Editar"><i data-lucide="edit-3" style="width:14px;"></i></button>
+                                    <button onclick="deleteTask(${sysIdx}, ${idx})" class="btn p-0 text-danger opacity-50 hover-opacity-100" title="Excluir"><i data-lucide="trash-2" style="width:14px;"></i></button>
+                                </div>
+                                <span class="badge ${t.badge} rounded-pill ms-auto" style="font-size: 0.65rem; padding: 4px 10px;" ${badgeStyle}>${t.status}</span>
+                            </div>
+                            <h6 class="task-title">${t.title}</h6>
+                            <div class="task-description">${t.full}</div>
+                        </div>
+                    `}).join('')}
+                </div>`;
+                wrapper.appendChild(block);
+            });
+
+            lucide.createIcons();
+            document.getElementById('globalCount').innerText = Object.values(globalS).reduce((a, b) => a + b, 0);
+
+            document.getElementById('globalSummary').innerHTML = Object.entries(globalS).map(([status, count]) => {
+                const info = getStatusInfo(status);
+                const style = info.customColor ? `style="background-color: ${info.customColor} !important"` : '';
+                return `<span class="badge ${info.badge} opacity-75" ${style}>${status}: ${count}</span>`;
+            }).join('');
+
+            updateCharts(globalS);
+        }
+
+        function deleteTask(sysIdx, taskIdx) {
+            if (confirm("Deseja realmente excluir esta tarefa?")) {
+                allData[sysIdx].tasks.splice(taskIdx, 1);
+                if (allData[sysIdx].tasks.length === 0) allData.splice(sysIdx, 1);
+                renderAll();
+            }
+        }
+
+        function editTask(sysIdx, taskIdx) {
+            const task = allData[sysIdx].tasks[taskIdx];
+            const newText = prompt("Edite o título/descrição da tarefa:", task.title);
+            if (newText !== null && newText.trim() !== "") {
+                task.title = newText.substring(0, 80);
+                task.full = linkify(newText);
+                renderAll();
+            }
+        }
+
+        function initCharts() {
+            const textColor = getComputedStyle(document.documentElement).getPropertyValue('--chart-text').trim();
+            const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--chart-grid').trim();
+
+            Chart.register(ChartDataLabels);
+
+            statusChart = new Chart(document.getElementById('statusChart'), {
+                type: 'doughnut',
+                data: { labels: ['PASSOU', 'FALHOU', 'BLOQUEADO', 'SUGESTÃO'], datasets: [{ data: [0, 0, 0, 0], backgroundColor: Object.values(colors), borderWeight: 0, hoverOffset: 15 }] },
+                options: {
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        title: { display: true, text: 'Consolidado Global (%)', color: textColor, font: { size: 16, weight: 'bold', family: 'Inter' }, padding: 20 },
+                        legend: { position: 'bottom', labels: { usePointStyle: true, color: textColor, font: { family: 'Inter', size: 11 } } },
+                        datalabels: {
+                            color: '#fff',
+                            borderWidth: 0,
+                            font: { weight: 'bold', size: 12 },
+                            textStrokeColor: 'rgba(0, 0, 0, 0.6)',
+                            textStrokeWidth: 3,
+                            formatter: (value, ctx) => {
+                                let sum = 0;
+                                let dataArr = ctx.chart.data.datasets[0].data;
+                                dataArr.map(data => { sum += data; });
+                                let percentage = (value * 100 / sum).toFixed(1) + "%";
+                                return value > 0 ? `${value}\n${percentage}` : '';
+                            },
+                            textAlign: 'center'
+                        }
+                    }
+                }
+            });
+            typeChart = new Chart(document.getElementById('typeChart'), {
+                type: 'bar',
+                data: { labels: ['Validada', 'Correção', 'Retorno', 'Sugestão'], datasets: [{ label: 'Qtd', data: [0, 0, 0, 0], backgroundColor: Object.values(colors), borderRadius: 6, barThickness: 40 }] },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: true, text: 'Volume por Categoria', color: textColor, font: { size: 16, weight: 'bold', family: 'Inter' }, padding: 20 },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'top',
+                            color: textColor,
+                            font: { weight: '800', size: 12 },
+                            textStrokeColor: document.documentElement.getAttribute('data-theme') === 'dark' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)',
+                            textStrokeWidth: 2,
+                            formatter: (value) => value > 0 ? value : ''
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor }, grace: '10%' },
+                        x: { grid: { display: false }, ticks: { color: textColor } }
+                    }
+                }
+            });
+        }
+
+        function updateCharts(s) {
+            const labels = Object.keys(s);
+            const counts = Object.values(s);
+            const bgColors = labels.map(label => getStatusInfo(label).color);
+
+            statusChart.data.labels = labels;
+            statusChart.data.datasets[0].data = counts;
+            statusChart.data.datasets[0].backgroundColor = bgColors;
+
+            typeChart.data.labels = labels;
+            typeChart.data.datasets[0].data = counts;
+            typeChart.data.datasets[0].backgroundColor = bgColors;
+
+            statusChart.update();
+            typeChart.update();
+        }
+
+        function clearAll() { if (confirm("Limpar tudo?")) { allData = []; renderAll(); document.getElementById('emptyMsg').style.display = 'block'; } }
+
+        function exportData() {
+            if (allData.length === 0) return alert("Não há dados para exportar.");
+            const dataStr = JSON.stringify(allData, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `qa-report-export-${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (Array.isArray(imported)) {
+                        if (confirm("Isso substituirá as tarefas atuais. Deseja continuar?")) {
+                            allData = imported;
+                            renderAll();
+                            document.getElementById('emptyMsg').style.display = allData.length === 0 ? 'block' : 'none';
+                            alert("Dados importados com sucesso!");
+                        }
+                    } else {
+                        alert("Formato de arquivo inválido.");
+                    }
+                } catch (err) {
+                    alert("Erro ao ler o arquivo JSON.");
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = ''; // Limpa o input para permitir re-importação do mesmo arquivo
+        }
+
+        window.onload = () => {
+            const savedTheme = localStorage.getItem('qa-report-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeUI();
+            initCharts();
+            updateChartsColors();
+        };
+        async function checkGeminiModels() {
+            const key = document.getElementById('apiKeyInput').value.trim();
+            const resDiv = document.getElementById('checkResult');
+            if (!key) return alert("Insira uma chave primeiro.");
+
+            resDiv.style.display = 'block';
+            resDiv.innerHTML = "Checando...";
+            resDiv.className = "small mt-2 text-muted";
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+                const data = await response.json();
+
+                if (!response.ok) throw new Error(data.error?.message || "Erro desconhecido");
+
+                const models = data.models.map(m => m.name.split('/').pop());
+                resDiv.innerHTML = `<span class="text-success">✅ Conectado!</span><br>Modelos: ${models.slice(0, 5).join(', ')}...`;
+                resDiv.className = "small mt-2 text-success";
+
+                const modelInput = document.getElementById('apiModelInput');
+                if (!modelInput.value && models.includes('gemini-1.5-flash')) {
+                    modelInput.value = 'gemini-1.5-flash';
+                }
+            } catch (err) {
+                resDiv.innerHTML = `<span class="text-danger">❌ Erro:</span> ${err.message}`;
+                resDiv.className = "small mt-2 text-danger";
+            }
+        }
+    </script>
+</body>
+
+</html>
